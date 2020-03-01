@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+######
+#
+# Marco A. Flores-Coronado, Universidad Autónoma del Estado de Morelos (UAEM)
+# 2020
+#
+# This code trains a Self-Organizing Map (SOM);after being trained, weights may
+# be saved as .txt
+# To plot the SOM, this script search for the winner nodes for each element from
+# the training element (normalized in range 0:1), then it determines which type
+# of data such node stands for by the most common element (label) identified with
+# such node. Thus, que plotting still works for testing data.
+#################### libraries #######################
+import datetime
+inicio=datetime.datetime.now()
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+################### functions ########################
+
+def closest_node(data, t, map, m_rows, m_cols):
+    result=(0,0)
+    small_dist = dist(data[t],map[0][0])#número inicial de distancia pequeña
+    for i in range(m_rows):
+      for j in range(m_cols):
+        ed = dist(map[i][j], data[t])#esto saca la distancia euclideana entre
+# el elemento t y el nodo por analizar i,j#####################################
+        if ed < small_dist:# compra distancia euclideana para saber su fitness
+          small_dist = ed# si sí, la menor distancia se reescribe
+          result = (i, j)# si sí, resultado se sobrescriba con el nodo + fit
+    return result
+
+
+def dist(v1, v2):
+    return np.sqrt(np.sum((v1 - v2) ** 2))
+
+def eucl (r1,c1,r2,c2):
+    n1=np.array((r1,c1))
+    n2=np.array((r2,c2))
+    eud=np.linalg.norm(n1-n2)
+    return eud
+
+def most_common(lst, n):# sirve para plotear, busca más cumun
+  if len(lst) == 0: return -1
+  counts = np.zeros(shape=n, dtype=np.int)
+  for i in range(len(lst)):
+    counts[lst[i]] += 1
+  return np.argmax(counts)
+
+def normal(x,g):
+    return x/g
+
+
+def coord_vec(x,y,Cols,Rows,rango):
+    coord=[]
+    xpos=int(x+rango)
+    if xpos>Cols:
+        xpos=Cols        
+    xneg=int(x-rango)
+    if xneg<0:
+        xneg=0        
+    ypos=int(y+rango)
+    if ypos>Rows:
+        ypos=Rows        
+    yneg=int(y-rango)
+    if yneg<0:
+        yneg=0
+    coord.append(xneg)
+    coord.append(xpos)
+    coord.append(yneg)
+    coord.append(ypos)
+    return coord
+    
+# ==================================================================
+
+def main():
+    #np.random.seed() #uncomment to control seed
+    Dim = 784# dimensiones del vector de entrada
+    Rows = 12; Cols = 12#  tmaño m*n del SOM
+    RangeMax = eucl(0,0,Rows,Cols)# cantidad de nodos, AKA= area
+    LearnMax = 0.5# learning rate
+    StepsMax = 100#cantidad de permutaciones de entrenamiento
+    final_doc = "digits_tutoral.txt"
+    savetext=True
+    plotsom=True
+    
+    print("We're woking. With some luck, you won't fuck this shit up")
+    data_file = "/home/marco/.config/spyder-py3/SOIMA/mnist_test.csv"
+    data_x = np.loadtxt(data_file, delimiter=",", usecols=range(1,785),
+    dtype=np.floating)# vector por sujeto
+    maxim=np.amax(data_x)
+    data_x=normal(data_x,maxim)
+    data_y = np.loadtxt(data_file, delimiter=",", usecols=(0),
+                        dtype=np.int)# labels
+    print("Looks fine for me, but I am just a computer")
+    print("Lets start pretending we are building a SOM; engineer foetus working   ")
+    map = np.random.random_sample(size=(Rows,Cols,Dim))#esto genera una matriz ##
+#map y llena cada célula con floats aleatorios                               ##
+    for s in range(StepsMax):
+        if s % (StepsMax/10) == 0: 
+            print("Shit n = ", str(s))
+        pct_left = 1.0 - ((s * 1.0) / StepsMax)#saca la contraria de la prop     ##
+#del código que se ha corrido                                                ##
+        curr_range = (int)(pct_left * RangeMax)#da el valor real de lo que falta ##
+        curr_rate = pct_left * LearnMax
+        index=list(range(len(data_x)))
+        random.shuffle(index)
+        for i in range(len(data_x)):
+            t=index[i]
+#t = np.random.randint(len(data_x))#genera un vector aleatorio de len=data##
+            (bmu_row, bmu_col) = closest_node(data_x, t, map, Rows, Cols)
+            coord=coord_vec(bmu_row,bmu_col,Rows,Cols,curr_range)
+            for i in range(coord[0],coord[1]):
+                for j in range(coord[2],coord[3]):
+                    if eucl(bmu_row, bmu_col, i, j) < curr_range:
+                        map[i][j] = map[i][j] + (curr_rate * (data_x[t] - map[i][j]))#función de adecuación                             ##
+        print("Supose we ended working, it is probably wrong, but lets pretend")
+        trai=datetime.datetime.now()
+        print("Engineer foetus is quite fast, it took", str(trai-inicio), "for him to finish")
+        if plotsom==True:
+            print("Engineer foetus will now start painting your SOM")
+            mapping = np.empty(shape=(Rows,Cols), dtype=object)
+            for i in range(Rows):
+                for j in range(Cols):
+                    mapping[i][j] = []
+
+            for t in range(len(data_x)):
+                (m_row, m_col) = closest_node(data_x, t, map, Rows, Cols)
+                mapping[m_row][m_col].append(data_y[t])
+
+            label_map = np.zeros(shape=(Rows,Cols), dtype=np.int)
+            for i in range(Rows):
+                for j in range(Cols):
+                    label_map[i][j] = most_common(mapping[i][j], 10)
+            print("And now, this is where fun beggins")
+            plt.imshow(label_map, cmap=plt.cm.get_cmap('terrain_r', 11))
+            plt.title("SOM")
+            plt.colorbar()
+            plt.show()
+            trai=datetime.datetime.now()
+            print("And now, some words from the builder: 'It took", str(trai-inicio), "to build this', E.F.")
+            print("If you had taken misoprostol, this SOM couldnt have been done")
+        if savetext==True:
+            print("Engineer foetus will save this SOM to delight future nonborns ")
+            prototipe=[]
+            for i in range(Cols):
+                for j in range(Rows):
+                    datito=map[i][j]
+                    prototipe.append(datito)
+        
+            np.savetxt(final_doc,prototipe,delimiter=",")
+            print("Itś all folks")
+if __name__=="__main__":
+    main()
