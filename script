@@ -86,7 +86,7 @@ def main():
     savetext=True
     plotsom=True
     
-    print("We're woking. With some luck, you won't fuck this shit up")
+    print("We're woking")
     data_file = "/home/marco/.config/spyder-py3/SOIMA/mnist_test.csv"
     data_x = np.loadtxt(data_file, delimiter=",", usecols=range(1,785),
     dtype=np.floating)# vector por sujeto
@@ -116,7 +116,7 @@ def main():
                 for j in range(coord[2],coord[3]):
                     if eucl(bmu_row, bmu_col, i, j) < curr_range:
                         map[i][j] = map[i][j] + (curr_rate * (data_x[t] - map[i][j]))#función de adecuación                             ##
-        print("Supose we ended working, it is probably wrong, but lets pretend")
+        print("Training has just finished")
         trai=datetime.datetime.now()
         print("Engineer foetus is quite fast, it took", str(trai-inicio), "for him to finish")
         if plotsom==True:
@@ -134,7 +134,7 @@ def main():
             for i in range(Rows):
                 for j in range(Cols):
                     label_map[i][j] = most_common(mapping[i][j], 10)
-            print("And now, this is where fun beggins")
+            print("Plotting SOM")
             plt.imshow(label_map, cmap=plt.cm.get_cmap('terrain_r', 11))
             plt.title("SOM")
             plt.colorbar()
@@ -143,7 +143,7 @@ def main():
             print("And now, some words from the builder: 'It took", str(trai-inicio), "to build this', E.F.")
             print("If you had taken misoprostol, this SOM couldnt have been done")
         if savetext==True:
-            print("Engineer foetus will save this SOM to delight future nonborns ")
+            print("Saving SOM")
             prototipe=[]
             for i in range(Cols):
                 for j in range(Rows):
@@ -151,6 +151,6 @@ def main():
                     prototipe.append(datito)
         
             np.savetxt(final_doc,prototipe,delimiter=",")
-            print("Itś all folks")
+            
 if __name__=="__main__":
     main()
